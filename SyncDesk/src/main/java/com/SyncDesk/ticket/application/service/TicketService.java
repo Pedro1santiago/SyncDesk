@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -111,6 +112,33 @@ public class TicketService {
         Ticket ticket = loadTicket(ticketId);
         ticket.close();
         return TicketResponse.from(ticketRepository.save(ticket));
+    }
+
+    @Transactional
+    public TicketMessageResponse sendMessage(UUID ticketId, SendMessageRequest request, UserPrincipal principal) {
+        Ticket ticket = loadTicket(ticketId);
+        validateAccess(ticket, principal);
+
+        User sender = userRepository.findById(principal.getUserId())
+                .orElseThrow(() -> NotFoundException.of("User", principal.getUserId()));
+
+        ticket.addMessage(sender, request.message());
+        Ticket saved = ticketRepository.save(ticket);
+
+        return saved.getMessages().stream()
+                .filter(m -> m.getMessage().equals(request.message()))
+                .findFirst()
+                .map(TicketMessageResponse::from)
+                .orElseThrow();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TicketMessageResponse> getMessages(UUID ticketId, UserPrincipal principal) {
+        Ticket ticket = loadTicket(ticketId);
+        validateAccess(ticket, principal);
+        return ticket.getMessages().stream()
+                .map(TicketMessageResponse::from)
+                .toList();
     }
 
     private Ticket loadTicket(UUID ticketId) {
