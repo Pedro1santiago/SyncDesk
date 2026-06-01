@@ -141,6 +141,28 @@ public class TicketService {
                 .toList();
     }
 
+    @Transactional
+    public TicketAttachmentResponse addAttachment(UUID ticketId, AddAttachmentRequest request, UserPrincipal principal) {
+        Ticket ticket = loadTicket(ticketId);
+        validateAccess(ticket, principal);
+        ticket.addAttachment(request.fileName(), request.fileUrl());
+        Ticket saved = ticketRepository.save(ticket);
+        return saved.getAttachments().stream()
+                .filter(a -> a.getFileUrl().equals(request.fileUrl()))
+                .findFirst()
+                .map(TicketAttachmentResponse::from)
+                .orElseThrow();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TicketAttachmentResponse> getAttachments(UUID ticketId, UserPrincipal principal) {
+        Ticket ticket = loadTicket(ticketId);
+        validateAccess(ticket, principal);
+        return ticket.getAttachments().stream()
+                .map(TicketAttachmentResponse::from)
+                .toList();
+    }
+
     private Ticket loadTicket(UUID ticketId) {
         return ticketRepository.findById(ticketId)
                 .orElseThrow(() -> NotFoundException.of("Ticket", ticketId));
