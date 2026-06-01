@@ -4,8 +4,10 @@ import com.syncdesk.department.domain.Department;
 import com.syncdesk.ticket.domain.valueobject.TicketDepartmentId;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "ticket_departments")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
