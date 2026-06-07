@@ -161,14 +161,10 @@ public class TicketService {
         User sender = userRepository.findById(principal.getUserId())
                 .orElseThrow(() -> NotFoundException.of("User", principal.getUserId()));
 
-        ticket.addMessage(sender, request.message());
-        Ticket saved = ticketRepository.save(ticket);
+        TicketMessage msg = ticket.addMessage(sender, request.message());
+        ticketRepository.save(ticket);
 
-        return saved.getMessages().stream()
-                .filter(m -> m.getMessage().equals(request.message()))
-                .findFirst()
-                .map(TicketMessageResponse::from)
-                .orElseThrow();
+        return TicketMessageResponse.from(msg);
     }
 
     @Transactional(readOnly = true)
@@ -185,13 +181,10 @@ public class TicketService {
         log.info("Adding attachment '{}' to ticket id={} by userId={}", request.fileName(), ticketId, principal.getUserId());
         Ticket ticket = loadTicket(ticketId);
         validateAccess(ticket, principal);
-        ticket.addAttachment(request.fileName(), request.fileUrl());
-        Ticket saved = ticketRepository.save(ticket);
-        return saved.getAttachments().stream()
-                .filter(a -> a.getFileUrl().equals(request.fileUrl()))
-                .findFirst()
-                .map(TicketAttachmentResponse::from)
-                .orElseThrow();
+        TicketAttachment attachment = ticket.addAttachment(request.fileName(), request.fileUrl());
+        ticketRepository.save(ticket);
+
+        return TicketAttachmentResponse.from(attachment);
     }
 
     @Transactional(readOnly = true)

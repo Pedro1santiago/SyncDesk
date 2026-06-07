@@ -97,14 +97,18 @@ public class Ticket {
         this.priority = newPriority;
     }
 
-    public void addMessage(User sender, String message) {
+    public TicketMessage addMessage(User sender, String message) {
         rejectIfClosed();
-        this.messages.add(new TicketMessage(this, sender, message));
+        TicketMessage msg = new TicketMessage(this, sender, message);
+        this.messages.add(msg);
+        return msg;
     }
 
-    public void addAttachment(String fileName, String fileUrl) {
+    public TicketAttachment addAttachment(String fileName, String fileUrl) {
         rejectIfClosed();
-        this.attachments.add(new TicketAttachment(this, fileName, fileUrl));
+        TicketAttachment attachment = new TicketAttachment(this, fileName, fileUrl);
+        this.attachments.add(attachment);
+        return attachment;
     }
 
     public void assignDepartment(Department department) {
