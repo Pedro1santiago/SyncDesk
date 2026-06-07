@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Docs (local reference only) ###
+FRONTEND_ROUTES.md
+API_DOCS.md
