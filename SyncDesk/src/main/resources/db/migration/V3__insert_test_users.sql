@@ -39,4 +39,11 @@ INSERT INTO users (id, department_id, username, email, password, role, created_a
     '$2b$10$BkZOy/rYuDwFg1R1SAO9FuNhI7.tEUi8JAN4dy2ikUVjAPznkBTYy',
     'USER',
     NOW(), NOW()
-);
+)
+ON CONFLICT (username) DO UPDATE
+SET
+    department_id = EXCLUDED.department_id,
+    email = EXCLUDED.email,
+    password = EXCLUDED.password,
+    role = EXCLUDED.role,
+    updated_at = NOW();
