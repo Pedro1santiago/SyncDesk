@@ -85,8 +85,16 @@ public class TicketService {
         log.info("Assigning ticket id={} to agentId={}", ticketId, request.agentId());
         rejectIfNotAdminOrAgent(principal);
         Ticket ticket = loadTicket(ticketId);
+        validateAccess(ticket, principal);
         User agent = userRepository.findById(request.agentId())
                 .orElseThrow(() -> NotFoundException.of("User", request.agentId()));
+        if (!agent.isAgent() && !agent.isAdminOrAbove()) {
+            throw new BusinessException("Assigned user must be an agent");
+        }
+        User requester = principal.getUser();
+        if (requester.isAdmin() && !isSameDepartment(requester, agent)) {
+            throw new BusinessException("Admin can only assign agents from their own department");
+        }
         ticket.assignTo(agent);
         return TicketResponse.from(ticketRepository.save(ticket));
     }
@@ -96,6 +104,7 @@ public class TicketService {
         log.info("Changing status of ticket id={} to '{}'", ticketId, request.status());
         rejectIfNotAdminOrAgent(principal);
         Ticket ticket = loadTicket(ticketId);
+        validateAccess(ticket, principal);
         TicketStatus status = TicketStatus.valueOf(request.status().toUpperCase());
         ticket.changeStatus(status);
         return TicketResponse.from(ticketRepository.save(ticket));
@@ -106,6 +115,7 @@ public class TicketService {
         log.info("Changing priority of ticket id={} to '{}'", ticketId, request.priority());
         rejectIfNotAdminOrAgent(principal);
         Ticket ticket = loadTicket(ticketId);
+        validateAccess(ticket, principal);
         TicketPriority priority = TicketPriority.valueOf(request.priority().toUpperCase());
         ticket.changePriority(priority);
         return TicketResponse.from(ticketRepository.save(ticket));
@@ -116,6 +126,7 @@ public class TicketService {
         log.info("Assigning department id={} to ticket id={}", request.departmentId(), ticketId);
         rejectIfNotAdminOrAgent(principal);
         Ticket ticket = loadTicket(ticketId);
+        validateAccess(ticket, principal);
         Department department = departmentRepository.findById(request.departmentId())
                 .orElseThrow(() -> NotFoundException.of("Department", request.departmentId()));
         ticket.assignDepartment(department);
@@ -127,6 +138,7 @@ public class TicketService {
         log.info("Closing ticket id={} by userId={}", ticketId, principal.getUserId());
         rejectIfNotAdminOrAgent(principal);
         Ticket ticket = loadTicket(ticketId);
+        validateAccess(ticket, principal);
         ticket.close();
         return TicketResponse.from(ticketRepository.save(ticket));
     }
@@ -201,5 +213,10 @@ public class TicketService {
         if (!user.isAdminOrAbove() && !user.isAgent()) {
             throw new BusinessException("Only agents and admins can perform this action");
         }
+    }
+
+    private boolean isSameDepartment(User admin, User agent) {
+        if (admin.getDepartment() == null || agent.getDepartment() == null) return false;
+        return admin.getDepartment().getId().equals(agent.getDepartment().getId());
     }
 }

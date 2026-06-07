@@ -78,6 +78,11 @@ public class UserService {
                 throw new BusinessException("Admin must belong to a department to create users");
             }
             department = requester.getDepartment();
+        } else {
+            // SUPER_ADMIN: ADMIN role requires a department
+            if (role == Role.ADMIN && department == null) {
+                throw new BusinessException("A department is required when creating an ADMIN user");
+            }
         }
 
         User user = new User(
@@ -117,6 +122,10 @@ public class UserService {
             Department department = departmentRepository.findById(request.departmentId())
                     .orElseThrow(() -> NotFoundException.of("Department", request.departmentId()));
             user.changeDepartment(department);
+        }
+
+        if (user.isAdmin() && user.getDepartment() == null) {
+            throw new BusinessException("A department is required for ADMIN users");
         }
 
         return UserResponse.from(userRepository.save(user));
