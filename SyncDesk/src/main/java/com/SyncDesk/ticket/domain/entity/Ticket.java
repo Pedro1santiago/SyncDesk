@@ -4,6 +4,7 @@ import com.syncdesk.attachment.domain.TicketAttachment;
 import com.syncdesk.department.domain.Department;
 import com.syncdesk.ticket.domain.enums.TicketPriority;
 import com.syncdesk.ticket.domain.enums.TicketStatus;
+import com.syncdesk.ticket.domain.exception.TicketClosedException;
 import com.syncdesk.ticket.domain.valueobject.Title;
 import com.syncdesk.user.domain.User;
 import jakarta.persistence.*;
@@ -125,9 +126,15 @@ public class Ticket {
         return this.assignedUser != null && this.assignedUser.getId().equals(userId);
     }
 
+    public boolean isInDepartment(com.syncdesk.department.domain.Department department) {
+        if (department == null) return false;
+        return ticketDepartments.stream()
+                .anyMatch(td -> td.getDepartment().getId().equals(department.getId()));
+    }
+
     private void rejectIfClosed() {
         if (TicketStatus.CLOSED.equals(this.status)) {
-            throw new IllegalStateException("Closed ticket cannot be modified");
+            throw new TicketClosedException(this.id.toString());
         }
     }
 }

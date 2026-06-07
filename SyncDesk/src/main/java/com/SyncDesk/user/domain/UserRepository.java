@@ -19,4 +19,6 @@ public interface UserRepository {
     boolean existsByEmail(String email);
 
     boolean existsByUsername(String username);
+
+    Page<User> findByDepartmentId(UUID departmentId, Pageable pageable);
 }

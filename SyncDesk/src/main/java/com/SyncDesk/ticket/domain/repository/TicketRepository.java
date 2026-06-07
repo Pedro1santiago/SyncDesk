@@ -21,4 +21,6 @@ public interface TicketRepository {
     Page<Ticket> findByAssignedUserId(UUID userId, Pageable pageable);
 
     Page<Ticket> findByStatus(TicketStatus status, Pageable pageable);
+
+    Page<Ticket> findByDepartmentId(UUID departmentId, Pageable pageable);
 }

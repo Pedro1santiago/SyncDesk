@@ -4,11 +4,14 @@ import com.syncdesk.department.domain.Department;
 import com.syncdesk.department.domain.DepartmentRepository;
 import com.syncdesk.shared.exception.BusinessException;
 import com.syncdesk.shared.exception.NotFoundException;
+import com.syncdesk.shared.security.UserPrincipal;
 import com.syncdesk.user.domain.*;
 import com.syncdesk.user.presentation.request.CreateUserRequest;
 import com.syncdesk.user.presentation.request.UpdateUserRequest;
 import com.syncdesk.user.presentation.response.UserResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,33 +24,61 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
-    public Page<UserResponse> findAll(Pageable pageable) {
+    public Page<UserResponse> findAll(UserPrincipal principal, Pageable pageable) {
+        log.debug("Listing users: page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
+        User requester = principal.getUser();
+        if (requester.isAdmin()) {
+            if (requester.getDepartment() == null) return Page.empty(pageable);
+            return userRepository.findByDepartmentId(requester.getDepartment().getId(), pageable).map(UserResponse::from);
+        }
         return userRepository.findAll(pageable).map(UserResponse::from);
     }
 
     @Transactional(readOnly = true)
-    public UserResponse findById(UUID id) {
+    public UserResponse findById(UUID id, UserPrincipal principal) {
+        log.debug("Finding user by id={}", id);
+        User requester = principal.getUser();
         User user = userRepository.findById(id)
                 .orElseThrow(() -> NotFoundException.of("User", id));
+        if (requester.isAdmin() && !isSameDepartment(requester, user)) {
+            throw new BusinessException("Access denied to this user");
+        }
         return UserResponse.from(user);
     }
 
     @Transactional
-    public UserResponse create(CreateUserRequest request) {
+    public UserResponse create(CreateUserRequest request, UserPrincipal principal) {
+        log.info("Creating user: email={}, username={}, role={}", request.email(), request.username(), request.role());
+        User requester = principal.getUser();
         if (userRepository.existsByEmail(request.email())) {
+            log.warn("User creation failed — email already in use: {}", request.email());
             throw new BusinessException("Email already in use: " + request.email());
         }
         if (userRepository.existsByUsername(request.username())) {
+            log.warn("User creation failed — username already taken: {}", request.username());
             throw new BusinessException("Username already taken: " + request.username());
         }
 
-        Department department = resolveOptionalDepartment(request.departmentId());
         Role role = Role.valueOf(request.role().toUpperCase());
+        Department department = resolveOptionalDepartment(request.departmentId());
+
+        if (requester.isAdmin()) {
+            // ADMIN can only create USER or AGENT, and only within their own department
+            if (role == Role.ADMIN || role == Role.SUPER_ADMIN) {
+                throw new BusinessException("Admin can only create USER or AGENT accounts");
+            }
+            if (requester.getDepartment() == null) {
+                throw new BusinessException("Admin must belong to a department to create users");
+            }
+            department = requester.getDepartment();
+        }
 
         User user = new User(
                 department,
@@ -61,15 +92,28 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse update(UUID id, UpdateUserRequest request) {
+    public UserResponse update(UUID id, UpdateUserRequest request, UserPrincipal principal) {
+        log.info("Updating user id={}: role={}, departmentId={}", id, request.role(), request.departmentId());
+        User requester = principal.getUser();
         User user = userRepository.findById(id)
                 .orElseThrow(() -> NotFoundException.of("User", id));
 
+        if (requester.isAdmin() && !isSameDepartment(requester, user)) {
+            throw new BusinessException("Access denied to this user");
+        }
+
         if (request.role() != null) {
-            user.changeRole(Role.valueOf(request.role().toUpperCase()));
+            Role newRole = Role.valueOf(request.role().toUpperCase());
+            if (requester.isAdmin() && (newRole == Role.ADMIN || newRole == Role.SUPER_ADMIN)) {
+                throw new BusinessException("Admin cannot assign ADMIN or SUPER_ADMIN roles");
+            }
+            user.changeRole(newRole);
         }
 
         if (request.departmentId() != null) {
+            if (requester.isAdmin()) {
+                throw new BusinessException("Admin cannot change a user's department");
+            }
             Department department = departmentRepository.findById(request.departmentId())
                     .orElseThrow(() -> NotFoundException.of("Department", request.departmentId()));
             user.changeDepartment(department);
@@ -84,5 +128,10 @@ public class UserService {
         }
         return departmentRepository.findById(departmentId)
                 .orElseThrow(() -> NotFoundException.of("Department", departmentId));
+    }
+
+    private boolean isSameDepartment(User requester, User target) {
+        if (requester.getDepartment() == null || target.getDepartment() == null) return false;
+        return requester.getDepartment().getId().equals(target.getDepartment().getId());
     }
 }

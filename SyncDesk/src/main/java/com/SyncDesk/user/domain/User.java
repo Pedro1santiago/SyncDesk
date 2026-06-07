@@ -70,6 +70,14 @@ public class User {
         return Role.ADMIN.equals(this.role);
     }
 
+    public boolean isSuperAdmin() {
+        return Role.SUPER_ADMIN.equals(this.role);
+    }
+
+    public boolean isAdminOrAbove() {
+        return isAdmin() || isSuperAdmin();
+    }
+
     public boolean isAgent() {
         return Role.AGENT.equals(this.role);
     }

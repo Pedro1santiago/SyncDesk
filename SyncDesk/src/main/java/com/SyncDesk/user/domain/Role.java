@@ -3,5 +3,6 @@ package com.syncdesk.user.domain;
 public enum Role {
     USER,
     AGENT,
-    ADMIN
+    ADMIN,
+    SUPER_ADMIN
 }
