@@ -1,5 +1,6 @@
 package com.syncdesk.ticket.application.service;
 
+import com.syncdesk.attachment.domain.TicketAttachment;
 import com.syncdesk.department.domain.Department;
 import com.syncdesk.department.domain.DepartmentRepository;
 import com.syncdesk.shared.exception.BusinessException;
@@ -7,6 +8,7 @@ import com.syncdesk.shared.exception.NotFoundException;
 import com.syncdesk.shared.security.UserPrincipal;
 import com.syncdesk.ticket.application.dto.*;
 import com.syncdesk.ticket.domain.entity.Ticket;
+import com.syncdesk.ticket.domain.entity.TicketMessage;
 import com.syncdesk.ticket.domain.enums.TicketPriority;
 import com.syncdesk.ticket.domain.enums.TicketStatus;
 import com.syncdesk.ticket.domain.repository.TicketRepository;
