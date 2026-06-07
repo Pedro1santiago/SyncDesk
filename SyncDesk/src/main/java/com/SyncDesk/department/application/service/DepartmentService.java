@@ -6,7 +6,6 @@ import com.syncdesk.department.presentation.request.CreateDepartmentRequest;
 import com.syncdesk.department.presentation.response.DepartmentResponse;
 import com.syncdesk.shared.exception.BusinessException;
 import com.syncdesk.shared.exception.NotFoundException;
-import com.syncdesk.shared.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,15 +54,8 @@ public class DepartmentService {
     }
 
     @Transactional
-    public DepartmentResponse rename(UUID id, CreateDepartmentRequest request, UserPrincipal principal) {
+    public DepartmentResponse rename(UUID id, CreateDepartmentRequest request) {
         log.info("Renaming department id={} to '{}'", id, request.name());
-        if (principal.getUser().isAdmin()) {
-            UUID adminDeptId = principal.getUser().getDepartment() != null
-                    ? principal.getUser().getDepartment().getId() : null;
-            if (!id.equals(adminDeptId)) {
-                throw new BusinessException("Admin can only rename their own department");
-            }
-        }
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> NotFoundException.of("Department", id));
         department.rename(request.name());

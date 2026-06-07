@@ -113,6 +113,11 @@ public class Ticket {
 
     public void assignDepartment(Department department) {
         rejectIfClosed();
+        boolean alreadyAssigned = this.ticketDepartments.stream()
+                .anyMatch(td -> td.getDepartment().getId().equals(department.getId()));
+        if (alreadyAssigned) {
+            return;
+        }
         this.ticketDepartments.add(new TicketDepartment(this, department));
     }
 

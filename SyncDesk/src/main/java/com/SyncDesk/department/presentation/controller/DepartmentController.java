@@ -3,13 +3,11 @@ package com.syncdesk.department.presentation.controller;
 import com.syncdesk.department.application.service.DepartmentService;
 import com.syncdesk.department.presentation.request.CreateDepartmentRequest;
 import com.syncdesk.department.presentation.response.DepartmentResponse;
-import com.syncdesk.shared.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,12 +37,11 @@ public class DepartmentController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<DepartmentResponse> rename(
             @PathVariable UUID id,
-            @Valid @RequestBody CreateDepartmentRequest request,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(departmentService.rename(id, request, principal));
+            @Valid @RequestBody CreateDepartmentRequest request) {
+        return ResponseEntity.ok(departmentService.rename(id, request));
     }
 
     @DeleteMapping("/{id}")

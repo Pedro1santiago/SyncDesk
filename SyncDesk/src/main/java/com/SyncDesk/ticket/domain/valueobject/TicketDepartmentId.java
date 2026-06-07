@@ -1,6 +1,7 @@
 package com.syncdesk.ticket.domain.valueobject;
 
 import jakarta.persistence.Embeddable;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +11,7 @@ import java.util.UUID;
 @Getter
 @Embeddable
 @NoArgsConstructor
+@EqualsAndHashCode
 public class TicketDepartmentId implements Serializable {
 
     private UUID ticketId;
