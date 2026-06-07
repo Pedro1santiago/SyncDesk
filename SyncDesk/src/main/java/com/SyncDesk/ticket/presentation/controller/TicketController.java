@@ -3,6 +3,7 @@ package com.syncdesk.ticket.presentation.controller;
 import com.syncdesk.shared.security.UserPrincipal;
 import com.syncdesk.ticket.application.dto.*;
 import com.syncdesk.ticket.application.service.TicketService;
+import com.syncdesk.ticket.domain.enums.TicketStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,10 +33,15 @@ public class TicketController {
 
     @GetMapping
     public ResponseEntity<Page<TicketResponse>> findAll(
+            @RequestParam(required = false) String status,
             @PageableDefault(size = 20) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return ResponseEntity.ok(ticketService.findAll(principal, pageable));
+        TicketStatus ticketStatus = null;
+        if (status != null) {
+            ticketStatus = TicketStatus.valueOf(status.toUpperCase());
+        }
+        return ResponseEntity.ok(ticketService.findAll(principal, ticketStatus, pageable));
     }
 
     @GetMapping("/{id}")

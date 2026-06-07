@@ -54,23 +54,32 @@ public class TicketService {
     }
 
     @Transactional(readOnly = true)
-    public Page<TicketResponse> findAll(UserPrincipal principal, Pageable pageable) {
-        log.debug("Listing tickets: userId={}, role={}", principal.getUserId(), principal.getUser().getRole());
+    public Page<TicketResponse> findAll(UserPrincipal principal, TicketStatus status, Pageable pageable) {
+        log.debug("Listing tickets: userId={}, role={}, status={}", principal.getUserId(), principal.getUser().getRole(), status);
         User user = principal.getUser();
 
         if (user.isSuperAdmin()) {
-            return ticketRepository.findAll(pageable).map(TicketResponse::from);
+            return status != null
+                    ? ticketRepository.findByStatus(status, pageable).map(TicketResponse::from)
+                    : ticketRepository.findAll(pageable).map(TicketResponse::from);
         }
         if (user.isAdmin()) {
-            if (user.getDepartment() == null) {
-                return Page.empty(pageable);
-            }
-            return ticketRepository.findByDepartmentId(user.getDepartment().getId(), pageable).map(TicketResponse::from);
+            if (user.getDepartment() == null) return Page.empty(pageable);
+            UUID deptId = user.getDepartment().getId();
+            return status != null
+                    ? ticketRepository.findByDepartmentIdAndStatus(deptId, status, pageable).map(TicketResponse::from)
+                    : ticketRepository.findByDepartmentId(deptId, pageable).map(TicketResponse::from);
         }
         if (user.isAgent()) {
-            return ticketRepository.findByAssignedUserId(principal.getUserId(), pageable).map(TicketResponse::from);
+            UUID userId = principal.getUserId();
+            return status != null
+                    ? ticketRepository.findByAssignedUserIdAndStatus(userId, status, pageable).map(TicketResponse::from)
+                    : ticketRepository.findByAssignedUserId(userId, pageable).map(TicketResponse::from);
         }
-        return ticketRepository.findByUserId(principal.getUserId(), pageable).map(TicketResponse::from);
+        UUID userId = principal.getUserId();
+        return status != null
+                ? ticketRepository.findByUserIdAndStatus(userId, status, pageable).map(TicketResponse::from)
+                : ticketRepository.findByUserId(userId, pageable).map(TicketResponse::from);
     }
 
     @Transactional(readOnly = true)

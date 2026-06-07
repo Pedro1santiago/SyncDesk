@@ -23,4 +23,11 @@ public interface JpaTicketRepository extends JpaRepository<Ticket, UUID>, Ticket
 
     @Query("SELECT DISTINCT t FROM Ticket t JOIN t.ticketDepartments td WHERE td.department.id = :departmentId")
     Page<Ticket> findByDepartmentId(@Param("departmentId") UUID departmentId, Pageable pageable);
+
+    Page<Ticket> findByUserIdAndStatus(UUID userId, TicketStatus status, Pageable pageable);
+
+    Page<Ticket> findByAssignedUserIdAndStatus(UUID userId, TicketStatus status, Pageable pageable);
+
+    @Query("SELECT DISTINCT t FROM Ticket t JOIN t.ticketDepartments td WHERE td.department.id = :departmentId AND t.status = :status")
+    Page<Ticket> findByDepartmentIdAndStatus(@Param("departmentId") UUID departmentId, @Param("status") TicketStatus status, Pageable pageable);
 }
