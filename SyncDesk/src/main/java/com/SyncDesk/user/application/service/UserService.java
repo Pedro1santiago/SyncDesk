@@ -53,6 +53,13 @@ public class UserService {
         return UserResponse.from(user);
     }
 
+    @Transactional(readOnly = true)
+    public UserResponse me(UserPrincipal principal) {
+        User user = userRepository.findById(principal.getUserId())
+                .orElseThrow(() -> NotFoundException.of("User", principal.getUserId()));
+        return UserResponse.from(user);
+    }
+
     @Transactional
     public UserResponse create(CreateUserRequest request, UserPrincipal principal) {
         log.info("Creating user: email={}, username={}, role={}", request.email(), request.username(), request.role());
